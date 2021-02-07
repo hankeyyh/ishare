@@ -1,8 +1,0 @@
-FLASK_ENV = dev
-FLASK_APP = albumy
-FLASK_RUN_PORT = 5011
-MAIL_SERVER = smtp.office365.com
-MAIL_USERNAME = hankeyyh@outlook.com
-MAIL_PASSWORD = hanke-110
-MAIL_SENDGRID_SERVER = smtp.sendgrid.net
-SENDGRID_API_KEY = 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
