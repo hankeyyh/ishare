@@ -68,7 +68,7 @@ def report_photo(photo_id):
 	photo = Photo.query.get_or_404(photo_id)
 	return redirect(url_for('.show_photo', photo_id=photo_id))
 
-@main_bp.route('/delete_photo/<photo_id>')
+@main_bp.route('/delete_photo/<photo_id>', methods=['POST'])
 def delete_photo(photo_id):
 	photo = Photo.query.get_or_404(photo_id)
 	if current_user != photo.author:
