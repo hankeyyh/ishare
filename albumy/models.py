@@ -128,7 +128,7 @@ class Photo(db.Model):
 	
 	author = db.relationship('User', back_populates='photos')
 	
-@db.event.listens_for(Photo, 'after_delete', name=True)
+@db.event.listens_for(Photo, 'after_delete', named=True)
 def delete_photo(**kwargs):
 	target = kwargs['target']
 	for filename in (target.filename, target.filename_s, target.filename_m):
