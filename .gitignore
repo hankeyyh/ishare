@@ -4,6 +4,13 @@ uploads/*.JPG
 uploads/avatars/*.png
 albumy/__pycache__/
 
+.idea/
+Pipfile
+Pipfile.lock
+uploads/
+.flaskenv
+dev.db
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *$py.class
@@ -132,4 +139,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
 
