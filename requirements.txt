@@ -1,6 +1,9 @@
 Bootstrap-Flask==1.2.0
 Faker==4.0.2
 Flask==1.1.2
+Flask-WTF==0.14.3
+WTForms==2.3.3
+email-validator==1.1.2
 Flask-Admin==1.5.7
 Flask-Avatars==0.2.2
 Flask-Bootstrap==3.3.7.1
