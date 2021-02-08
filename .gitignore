@@ -3,6 +3,10 @@ uploads/*.jpg
 uploads/*.JPG
 uploads/avatars/*.png
 albumy/__pycache__/
+.idea
+dev.db
+pub.db
+test.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
