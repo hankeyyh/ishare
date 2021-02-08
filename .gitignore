@@ -8,12 +8,10 @@ dev.db
 pub.db
 test.db
 
-.idea/
 Pipfile
 Pipfile.lock
 uploads/
 .flaskenv
-dev.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
