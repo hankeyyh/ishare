@@ -30,6 +30,7 @@ class BaseConfig(object):
 		ALBUMY_PHOTO_SIZE['small']: '_s',  # thumbnail
 		ALBUMY_PHOTO_SIZE['medium']: '_m',  # display
 	}
+	ALBUMY_PHOTO_PER_PAGE = 12
 	# dropzone
 	DROPZONE_ALLOWED_FILE_TYPE = 'image'
 	DROPZONE_MAX_FILE_SIZE = 3

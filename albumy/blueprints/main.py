@@ -1,7 +1,7 @@
 # coding: utf-8
 import os
 
-from flask import Blueprint, render_template, request, current_app, send_from_directory
+from flask import Blueprint, render_template, request, current_app, send_from_directory, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 
 from albumy import db
@@ -53,3 +53,53 @@ def upload():
 @main_bp.route('/avatars/<path:filename>')
 def get_avatar(filename):
 	return send_from_directory(current_app.config['AVATARS_SAVE_PATH'], filename)
+
+@main_bp.route('/uploads/<path:filename>')
+def get_image(filename):
+	return send_from_directory(current_app.config['ALBUMY_UPLOAD_PATH'], filename)
+
+@main_bp.route('/photo/<int:photo_id>')
+def show_photo(photo_id):
+	photo = Photo.query.get_or_404(photo_id)
+	return render_template('main/photo.html', photo=photo)
+
+@main_bp.route('/report_photo/<photo_id>')
+def report_photo(photo_id):
+	photo = Photo.query.get_or_404(photo_id)
+	return redirect(url_for('.show_photo', photo_id=photo_id))
+
+@main_bp.route('/delete_photo/<photo_id>')
+def delete_photo(photo_id):
+	photo = Photo.query.get_or_404(photo_id)
+	if current_user != photo.author:
+		abort(403)
+	db.session.delete(photo)
+	db.session.commit()
+	flash('Photo deleted.', 'info')
+	
+	photo_n = Photo.query.with_parent(current_user).filter(Photo.id < photo_id).order_by(Photo.id.desc()).first()
+	if photo_n:
+		return redirect(url_for('.show_photo', photo_id=photo_n.id))
+
+	photo_p = Photo.query.with_parent(current_user).filter(Photo.id < photo_id).order_by(Photo.id.desc()).first()
+	if photo_p:
+		return redirect(url_for('.show_photo', photo_id=photo_p.id))
+	return redirect(url_for('user.index', username=current_user.username))
+
+@main_bp.route('/photo/n/<int:photo_id>')
+def photo_next(photo_id):
+	photo = Photo.query.get_or_404(photo_id)
+	photo_n = Photo.query.with_parent(photo.author).filter(Photo.id < photo_id).order_by(Photo.id.desc()).first()
+	if not photo_n:
+		flash("This is the last photo.", "info")
+		return redirect(url_for('.show_photo', photo_id=photo_id))
+	return redirect(url_for('.show_photo', photo_id=photo_n.id))
+
+@main_bp.route('/photo/p/<int:photo_id>')
+def photo_previous(photo_id):
+	photo = Photo.query.get_or_404(photo_id)
+	photo_p = Photo.query.with_parent(photo.author).filter(Photo.id > photo_id).order_by(Photo.id.asc()).first()
+	if photo_p is None:
+		flash('This is already the first one.', 'info')
+		return redirect(url_for('.show_photo', photo_id=photo_id))
+	return redirect(url_for('.show_photo', photo_id=photo_p.id))

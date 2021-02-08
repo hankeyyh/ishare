@@ -1,4 +1,6 @@
 # coding: utf-8
+import os
+
 from flask import current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
@@ -120,7 +122,18 @@ class Photo(db.Model):
 	filename_s = db.Column(db.String(64))
 	filename_m = db.Column(db.String(64))
 	timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+	can_comment = db.Column(db.Boolean, default=True)
+	flag = db.Column(db.Integer, default=0)
 	author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+	
 	author = db.relationship('User', back_populates='photos')
+	
+@db.event.listens_for(Photo, 'after_delete', name=True)
+def delete_photo(**kwargs):
+	target = kwargs['target']
+	for filename in (target.filename, target.filename_s, target.filename_m):
+		path = os.path.join(current_app.config['ALBUMY_UPLOAD_PATH'], filename)
+		if os.path.exists(path):
+			os.remove(path)
 	
 
