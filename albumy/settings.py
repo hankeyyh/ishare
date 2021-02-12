@@ -42,6 +42,8 @@ class BaseConfig(object):
 	# comment
 	ALBUMY_COMMENT_PER_PAGE = 15
 	ALBUMY_MANAGE_COMMENT_PER_PAGE = 30
+	# collector
+	ALBUMY_USER_PER_PAGE = 20
 	
 	
 class DevConfig(BaseConfig):

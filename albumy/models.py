@@ -13,6 +13,25 @@ collect_table = db.Table('collect_table',
                          db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
                          db.Column('photo_id', db.Integer, db.ForeignKey('photo.id')))
 
+role_permissions = db.Table('role_permissions',
+                            db.Column('role_id', db.Integer, db.ForeignKey('role.id')),
+                            db.Column('permission_id', db.Integer, db.ForeignKey('permission.id'))
+                            )
+
+tagging = db.Table('tagging',
+                   db.Column('photo_id', db.Integer, db.ForeignKey('photo.id')),
+                   db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'))
+                   )
+
+
+class Collect(db.Model):
+	"""连接user，photo多对多关系"""
+	collector_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+	collected_id = db.Column(db.Integer, db.ForeignKey('photo.id'), primary_key=True)
+	collector = db.relationship('User', back_populates='collections', lazy='joined')
+	collected = db.relationship('Photo', back_populates='collectors', lazy='joined')
+	timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 class User(db.Model, UserMixin):
 	"""用户"""
@@ -38,8 +57,9 @@ class User(db.Model, UserMixin):
 	# comments
 	comments = db.relationship('Comment', back_populates='author', cascade='all')
 	# collect photos
-	collections = db.relationship('Photo', secondary=collect_table, back_populates='collectors')
-	
+	# collections = db.relationship('Photo', secondary=collect_table, back_populates='collectors')
+	collections = db.relationship('Collect', back_populates='collector', cascade='all')
+
 	def __init__(self, **kwargs):
 		super(User, self).__init__(**kwargs)
 		self.set_role()
@@ -50,7 +70,6 @@ class User(db.Model, UserMixin):
 		filenames = avatar.generate(text=self.username)
 		self.avatar_s, self.avatar_m, self.avatar_l = filenames
 		db.session.commit()
-		
 		
 	def set_role(self):
 		"""设置角色"""
@@ -76,13 +95,56 @@ class User(db.Model, UserMixin):
 	
 	def validate_password(self, password):
 		return check_password_hash(self.password_hash, password)
-	
-	
-	
-role_permissions = db.Table('role_permissions',
-                            db.Column('role_id', db.Integer, db.ForeignKey('role.id')),
-                            db.Column('permission_id', db.Integer, db.ForeignKey('permission.id'))
-                            )
+
+	def collect(self, photo):
+		"""收藏图片"""
+		if self.is_collecting(photo):
+			return
+		collect = Collect(collector=self, collected=photo)
+		db.session.add(collect)
+		db.session.commit()
+
+	def uncollect(self, photo):
+		"""取消收藏"""
+		collect = Collect.query.with_parent(self).filter_by(collected_id=photo.id).first()
+		if collect:
+			db.session.delete(collect)
+			db.session.commit()
+
+	def is_collecting(self, photo):
+		"""图片是否已收藏"""
+		return Collect.query.with_parent(self).filter_by(collected_id=photo.id).first() is not None
+
+
+class Photo(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	description = db.Column(db.String(500))
+	filename = db.Column(db.String(64))
+	filename_s = db.Column(db.String(64))
+	filename_m = db.Column(db.String(64))
+	timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+	can_comment = db.Column(db.Boolean, default=True)
+	flag = db.Column(db.Integer, default=0)
+	# author
+	author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+	author = db.relationship('User', back_populates='photos')
+	# tag
+	tags = db.relationship("Tag", secondary=tagging, back_populates='photos')
+	# comments
+	comments = db.relationship('Comment', back_populates='photo', cascade='all')
+	# collector
+	# collectors = db.relationship('User', secondary=collect_table, back_populates='collections')
+	collectors = db.relationship('Collect', back_populates='collected', cascade='all')
+
+
+@db.event.listens_for(Photo, 'after_delete', named=True)
+def delete_photo(**kwargs):
+	target = kwargs['target']
+	for filename in (target.filename, target.filename_s, target.filename_m):
+		path = os.path.join(current_app.config['ALBUMY_UPLOAD_PATH'], filename)
+		if os.path.exists(path):
+			os.remove(path)
+
 
 class Permission(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
@@ -120,40 +182,6 @@ class Role(db.Model):
 				
 		db.session.commit()
 
-
-tagging = db.Table('tagging',
-                   db.Column('photo_id', db.Integer, db.ForeignKey('photo.id')),
-                   db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'))
-                   )
-
-class Photo(db.Model):
-	id = db.Column(db.Integer, primary_key=True)
-	description = db.Column(db.String(500))
-	filename = db.Column(db.String(64))
-	filename_s = db.Column(db.String(64))
-	filename_m = db.Column(db.String(64))
-	timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-	can_comment = db.Column(db.Boolean, default=True)
-	flag = db.Column(db.Integer, default=0)
-	# author
-	author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-	author = db.relationship('User', back_populates='photos')
-	# tag
-	tags = db.relationship("Tag", secondary=tagging, back_populates='photos')
-	# comments
-	comments = db.relationship('Comment', back_populates='photo', cascade='all')
-	# collector
-	collectors = db.relationship('User', secondary=collect_table, back_populates='collections')
-
-	
-@db.event.listens_for(Photo, 'after_delete', named=True)
-def delete_photo(**kwargs):
-	target = kwargs['target']
-	for filename in (target.filename, target.filename_s, target.filename_m):
-		path = os.path.join(current_app.config['ALBUMY_UPLOAD_PATH'], filename)
-		if os.path.exists(path):
-			os.remove(path)
-	
 
 class Tag(db.Model):
 	id = db.Column(db.Integer, primary_key=True)

@@ -6,7 +6,7 @@ from flask_login import login_required, current_user
 from albumy.utils import flash_errors
 from albumy import db
 from albumy.decorators import confirm_required, permission_required
-from albumy.models import Photo, Tag, Comment
+from albumy.models import Photo, Tag, Comment, Collect
 from albumy.utils import rename_image, resize_image
 from albumy.forms.main import DescriptionForm, TagForm, CommentForm
 
@@ -135,6 +135,7 @@ def report_photo(photo_id):
 	photo = Photo.query.get_or_404(photo_id)
 	photo.flag += 1
 	db.session.commit()
+	flash('Photo reported.', 'success')
 	return redirect(url_for('.show_photo', photo_id=photo_id))
 
 @main_bp.route('/delete_photo/<photo_id>', methods=['POST'])
@@ -249,3 +250,39 @@ def reply_comment(comment_id):
 	comment = Comment.query.get_or_404(comment_id)
 	return redirect(url_for('.show_photo', photo_id=comment.photo_id,
 	                        reply=comment_id, author=comment.author.name) + '#comment-form')
+
+
+@main_bp.route('/collect/<int:photo_id>', methods=['POST'])
+@confirm_required
+@permission_required("COLLECT")
+def collect(photo_id):
+	photo = Photo.query.get_or_404(photo_id)
+	if current_user.is_collecting(photo):
+		flash('Already collected.', 'info')
+		return render_template(url_for('.show_photo', photo_id=photo_id))
+
+	current_user.collect(photo)
+	flash('Photo collected.', 'success')
+	return redirect(url_for('.show_photo', photo_id=photo_id))
+
+
+@main_bp.route('/uncollect/<int:photo_id>', methods=['POST'])
+def uncollect(photo_id):
+	photo = Photo.query.get_or_404(photo_id)
+	if not current_user.is_collecting(photo):
+		flash('No collected yet.', 'info')
+		return render_template(url_for('.show_photo', photo_id=photo_id))
+
+	current_user.uncollect(photo)
+	flash('Photo uncollected.', 'success')
+	return redirect(url_for('.show_photo', photo_id=photo_id))
+
+
+@main_bp.route('/collectors/<int:photo_id>')
+def show_collectors(photo_id):
+	photo = Photo.query.get_or_404(photo_id)
+	page = request.args.get('page', 1)
+	per_page = current_app.config['ALBUMY_USER_PER_PAGE']
+	pagination = Collect.query.with_parent(photo).order_by(Collect.timestamp.asc()).paginate(page, per_page)
+	collects = pagination.items
+	return render_template('main/collectors.html', collects=collects, photo=photo, pagination=pagination)

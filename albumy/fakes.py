@@ -8,7 +8,7 @@ from flask import current_app
 from sqlalchemy.exc import IntegrityError
 
 from albumy.extensions import db
-from albumy.models import User, Photo, Tag, Comment
+from albumy.models import User, Photo, Tag, Comment, Collect
 
 fake = Faker()
 
@@ -85,3 +85,9 @@ def fake_comment(count=100):
 		)
 		db.session.add(comment)
 	db.session.commit()
+
+
+def fake_collect(collect=10):
+	for i in range(collect):
+		user = User.query.get(random.randint(1, User.query.count()))
+		user.collect(Photo.query.get(random.randint(1, Photo.query.count())))
