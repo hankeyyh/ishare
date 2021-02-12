@@ -9,7 +9,7 @@
         <div class="col-md-8">
             <div class="photo">
                 <a href="{{ url_for('.get_image', filename=photo.filename) }}" target="_blank">
-                    <img class="img-fluid" src="{{ url_for('.get_image', filename=photo.filename_s) }}">
+                    <img class="img-fluid" src="{{ url_for('.get_image', filename=photo.filename_m) }}">
                 </a>
             </div>
             <a class="btn btn-primary btn-sm text-white" data-toggle="modal" data-target="#share-modal">Share</a>
@@ -26,7 +26,7 @@
             <p class="text-muted float-right small">
                 <span class="oi oi-clock"></span> Upload at {{ moment(photo.timestamp).format('LL') }}
             </p>
-{#            {% include 'main/_comment.html' %}#}
+            {% include 'main/_comment.html' %}
         </div>
         <div class="col-md-4">
             {% include 'main/_photo_sidebar.html' %}

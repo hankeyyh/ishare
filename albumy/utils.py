@@ -34,7 +34,7 @@ def redirect_back(default='main.index', **kwargs):
 			return redirect(target)
 	return redirect(url_for(default, **kwargs))
 
-def flash_error(form):
+def flash_errors(form):
 	for field, errors in form.errors.items():
 		for error in errors:
 			flash(u"Error in the %s field - %s" % (form.field.label.text, error))

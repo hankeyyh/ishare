@@ -39,6 +39,9 @@ class BaseConfig(object):
 	# avatar
 	AVATARS_SAVE_PATH = os.path.join(ALBUMY_UPLOAD_PATH, 'avatars')
 	AVATARS_SIZE_TUPLE = (30, 100, 200)
+	# comment
+	ALBUMY_COMMENT_PER_PAGE = 15
+	ALBUMY_MANAGE_COMMENT_PER_PAGE = 30
 	
 	
 class DevConfig(BaseConfig):

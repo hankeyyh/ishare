@@ -9,6 +9,11 @@ from flask_login import UserMixin
 from flask_avatars import Identicon
 
 
+collect_table = db.Table('collect_table',
+                         db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
+                         db.Column('photo_id', db.Integer, db.ForeignKey('photo.id')))
+
+
 class User(db.Model, UserMixin):
 	"""用户"""
 	id = db.Column(db.Integer, primary_key=True)
@@ -20,18 +25,20 @@ class User(db.Model, UserMixin):
 	bio = db.Column(db.String(120))
 	location = db.Column(db.String(50))
 	member_since = db.Column(db.DateTime, default=datetime.utcnow)
-
-	confirmed = db.Column(db.Boolean, default=False)
-	
-	role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
-	role = db.relationship('Role', back_populates='users')
-	
-	photos = db.relationship('Photo', back_populates='author', cascade='all')
-	
-	# avatar
 	avatar_s = db.Column(db.String(64))
 	avatar_m = db.Column(db.String(64))
 	avatar_l = db.Column(db.String(64))
+	confirmed = db.Column(db.Boolean, default=False)
+
+	# role
+	role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
+	role = db.relationship('Role', back_populates='users')
+	# own photos
+	photos = db.relationship('Photo', back_populates='author', cascade='all')
+	# comments
+	comments = db.relationship('Comment', back_populates='author', cascade='all')
+	# collect photos
+	collections = db.relationship('Photo', secondary=collect_table, back_populates='collectors')
 	
 	def __init__(self, **kwargs):
 		super(User, self).__init__(**kwargs)
@@ -112,21 +119,32 @@ class Role(db.Model):
 				role.permissions.append(permission)
 				
 		db.session.commit()
-	
-	
-	
+
+
+tagging = db.Table('tagging',
+                   db.Column('photo_id', db.Integer, db.ForeignKey('photo.id')),
+                   db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'))
+                   )
+
 class Photo(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
-	description = db.Column(db.String(30))
+	description = db.Column(db.String(500))
 	filename = db.Column(db.String(64))
 	filename_s = db.Column(db.String(64))
 	filename_m = db.Column(db.String(64))
 	timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 	can_comment = db.Column(db.Boolean, default=True)
 	flag = db.Column(db.Integer, default=0)
+	# author
 	author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-	
 	author = db.relationship('User', back_populates='photos')
+	# tag
+	tags = db.relationship("Tag", secondary=tagging, back_populates='photos')
+	# comments
+	comments = db.relationship('Comment', back_populates='photo', cascade='all')
+	# collector
+	collectors = db.relationship('User', secondary=collect_table, back_populates='collections')
+
 	
 @db.event.listens_for(Photo, 'after_delete', named=True)
 def delete_photo(**kwargs):
@@ -137,3 +155,24 @@ def delete_photo(**kwargs):
 			os.remove(path)
 	
 
+class Tag(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	name = db.Column(db.String(64), index=True, unique=True)
+
+	photos = db.relationship("Photo", secondary=tagging, back_populates='tags')
+
+
+class Comment(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	body = db.Column(db.Text)
+	timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+	flag = db.Column(db.Integer, default=0)
+
+	replied_id = db.Column(db.Integer, db.ForeignKey('comment.id'))
+	author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+	photo_id = db.Column(db.Integer, db.ForeignKey('photo.id'))
+
+	photo = db.relationship('Photo', back_populates='comments')
+	author = db.relationship('User', back_populates='comments')
+	replies = db.relationship('Comment', back_populates='replied', cascade='all')
+	replied = db.relationship('Comment', back_populates='replies', remote_side=[id])

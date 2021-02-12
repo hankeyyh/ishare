@@ -8,7 +8,7 @@ from flask import current_app
 from sqlalchemy.exc import IntegrityError
 
 from albumy.extensions import db
-from albumy.models import User, Photo
+from albumy.models import User, Photo, Tag, Comment
 
 fake = Faker()
 
@@ -55,6 +55,33 @@ def fake_photo(count=30):
 		              filename_m=filename,
 		              author=User.query.get(random.randint(1, User.query.count())),
 		              timestamp=fake.date_time_this_year())
+
+		# tags
+		for j in range(random.randint(1, 5)):
+			tag = Tag.query.get(random.randint(1, Tag.query.count()))
+			if tag not in photo.tags:
+				photo.tags.append(tag)
+
 		db.session.add(photo)
 	db.session.commit()
-	
+
+
+def fake_tag(count=20):
+	for i in range(count):
+		tag = Tag(name=fake.word())
+		db.session.add(tag)
+		try:
+			db.session.commit()
+		except IntegrityError:
+			db.session.rollback()
+
+def fake_comment(count=100):
+	for i in range(count):
+		comment = Comment(
+			body=fake.sentence(),
+			timestamp=fake.date_time_this_year(),
+			photo_id=random.randint(1, Photo.query.count()),
+			author_id=random.randint(1, User.query.count())
+		)
+		db.session.add(comment)
+	db.session.commit()

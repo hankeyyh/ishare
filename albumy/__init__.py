@@ -10,6 +10,8 @@ from albumy.settings import configs, DevConfig
 from albumy.blueprints.main import main_bp
 from albumy.blueprints.auth import auth_bp
 from albumy.blueprints.user import user_bp
+from albumy.blueprints.ajax import ajax_bp
+
 
 def create_app(config_name=None):
 	config_name = os.getenv('FLASK_ENV', 'dev') if not config_name else config_name
@@ -38,6 +40,7 @@ def register_blueprints(app):
 	app.register_blueprint(main_bp)
 	app.register_blueprint(auth_bp, url_prefix='/auth')
 	app.register_blueprint(user_bp, url_prefix='/user')
+	app.register_blueprint(ajax_bp, url_prefix='/ajax')
 	
 def register_error_handlers(app):
 	@app.errorhandler(400)
@@ -103,9 +106,11 @@ def register_command(app):
 	@app.cli.command()
 	@click.option('--user', default=10, help='Quantity of users, default is 10.')
 	@click.option('--photo', default=30, help='Quantity of photos, default is 30.')
-	def forge(user, photo):
+	@click.option('--tag', default=20, help='Quantity of tags, default is 20.')
+	@click.option('--comment', default=100, help='Quantity of comments, default is 100.')
+	def forge(user, photo, tag, comment):
 		"""Generate fake data."""
-		from albumy.fakes import fake_admin, fake_user, fake_photo
+		from albumy.fakes import fake_admin, fake_user, fake_photo, fake_tag, fake_comment
 		
 		db.drop_all()
 		db.create_all()
@@ -118,6 +123,10 @@ def register_command(app):
 		fake_user(user)
 		click.echo('Generating %d photos...' % photo)
 		fake_photo(photo)
+		click.echo('Generating %d tags...' % tag)
+		fake_tag(tag)
+		click.echo('Generating %d comments...' % comment)
+		fake_comment(comment)
 		click.echo('Done.')
 		
 		
