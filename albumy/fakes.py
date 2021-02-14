@@ -8,7 +8,7 @@ from flask import current_app
 from sqlalchemy.exc import IntegrityError
 
 from albumy.extensions import db
-from albumy.models import User, Photo, Tag, Comment, Collect
+from albumy.models import User, Photo, Tag, Comment, Collect, Follow, Notification
 
 fake = Faker()
 
@@ -20,6 +20,9 @@ def fake_admin():
 	             website="",
 	             confirmed=True)
 	admin.set_password('helloflask')
+	for i in range(10):
+		notification = Notification(message='Hello, welcome to Albumy %d.' % i, receiver=admin)
+		db.session.add(notification)
 	db.session.add(admin)
 	db.session.commit()
 	
@@ -91,3 +94,9 @@ def fake_collect(collect=10):
 	for i in range(collect):
 		user = User.query.get(random.randint(1, User.query.count()))
 		user.collect(Photo.query.get(random.randint(1, Photo.query.count())))
+
+
+def fake_follow(count=30):
+	for i in range(count):
+		user = User.query.get(random.randint(1, User.query.count()))
+		user.follow(User.query.get(random.randint(1, User.query.count())))

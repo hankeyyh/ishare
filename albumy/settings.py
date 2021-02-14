@@ -44,6 +44,8 @@ class BaseConfig(object):
 	ALBUMY_MANAGE_COMMENT_PER_PAGE = 30
 	# collector
 	ALBUMY_USER_PER_PAGE = 20
+	# notification
+	ALBUMY_NOTIFICATION_PER_PAGE = 20
 	
 	
 class DevConfig(BaseConfig):

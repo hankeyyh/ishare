@@ -6,9 +6,10 @@ from flask_login import login_required, current_user
 from albumy.utils import flash_errors
 from albumy import db
 from albumy.decorators import confirm_required, permission_required
-from albumy.models import Photo, Tag, Comment, Collect
+from albumy.models import Photo, Tag, Comment, Collect, Notification
 from albumy.utils import rename_image, resize_image
 from albumy.forms.main import DescriptionForm, TagForm, CommentForm
+from albumy.notifications import push_comment_notification, push_collect_notification
 
 main_bp = Blueprint("main", __name__)
 
@@ -212,9 +213,13 @@ def new_comment(photo_id):
 		replied_id = request.args.get('reply')
 		if replied_id:
 			comment.replied = Comment.query.get_or_404(replied_id)
+			push_comment_notification(photo_id, comment.replied.author)
 		db.session.add(comment)
 		db.session.commit()
 		flash('Comment published.', 'success')
+
+		if current_user != photo.author:
+			push_comment_notification(photo_id, photo.author, page)
 
 	flash_errors(comment_form)
 	return redirect(url_for('.show_photo', photo_id=photo_id, page=page))
@@ -263,6 +268,9 @@ def collect(photo_id):
 
 	current_user.collect(photo)
 	flash('Photo collected.', 'success')
+	if current_user != photo.author:
+		push_collect_notification(current_user, photo_id, photo.author)
+
 	return redirect(url_for('.show_photo', photo_id=photo_id))
 
 
@@ -286,3 +294,36 @@ def show_collectors(photo_id):
 	pagination = Collect.query.with_parent(photo).order_by(Collect.timestamp.asc()).paginate(page, per_page)
 	collects = pagination.items
 	return render_template('main/collectors.html', collects=collects, photo=photo, pagination=pagination)
+
+
+@main_bp.route('/notifications')
+def show_notifications():
+	page = request.args.get('page', 1)
+	per_page = current_app.config['ALBUMY_NOTIFICATION_PER_PAGE']
+	notifications = Notification.query.with_parent(current_user)
+	filter_rule = request.args.get('filter')
+	if filter_rule == 'unread':
+		notifications = notifications.filter_by(is_read=False)
+	pagination = notifications.order_by(Notification.timestamp.desc()).paginate(page, per_page)
+	notifications = pagination.items
+	return render_template('main/notifications.html', pagination=pagination, notifications=notifications)
+
+
+@main_bp.route('/notification/read/<int:notification_id>', methods=['POST'])
+def read_notification(notification_id):
+	notification = Notification.query.get_or_404(notification_id)
+	if current_user != notification.receiver:
+		abort(403)
+	notification.is_read = True
+	db.session.commit()
+	flash('Notification archived.', 'success')
+	return redirect(url_for('.show_notifications'))
+
+
+@main_bp.route('/notifications/read/all', methods=['POST'])
+def read_all_notification():
+	for notification in current_user.notifications:
+		notification.is_read = True
+	db.session.commit()
+	flash('All notifications archived.', 'success')
+	return redirect(url_for('.show_notifications'))

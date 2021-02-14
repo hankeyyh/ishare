@@ -5,7 +5,8 @@ import os
 from flask_wtf.csrf import CSRFError
 from albumy.extensions import db, bootstrap, moment, mail, login_manager, dropzone, csrf, avatars
 from albumy.forms.auth import RegisterForm, LoginForm
-from albumy.models import User, Role
+from flask_login import current_user
+from albumy.models import Role, User, Photo, Tag, Follow, Comment, Collect, Permission, Notification
 from albumy.settings import configs, DevConfig
 from albumy.blueprints.main import main_bp
 from albumy.blueprints.auth import auth_bp
@@ -71,11 +72,18 @@ def register_error_handlers(app):
 def register_shell_context(app):
 	@app.shell_context_processor
 	def make_shell_context():
-		return dict(db=db, User=User)
+		return dict(db=db, User=User, Photo=Photo, Tag=Tag, Follow=Follow,
+		            Collect=Collect, Comment=Comment)
 	
 
 def register_template_context(app):
-	pass
+	@app.context_processor
+	def make_template_context():
+		if current_user.is_authenticated:
+			notification_count = Notification.query.with_parent(current_user).filter_by(is_read=False).count()
+		else:
+			notification_count = None
+		return dict(notification_count=notification_count)
 
 
 def register_command(app):
@@ -105,14 +113,15 @@ def register_command(app):
 
 	@app.cli.command()
 	@click.option('--user', default=10, help='Quantity of users, default is 10.')
+	@click.option('--follow', default=30, help='Quantity of follows, default is 50.')
 	@click.option('--photo', default=30, help='Quantity of photos, default is 500.')
 	@click.option('--tag', default=20, help='Quantity of tags, default is 500.')
 	@click.option('--collect', default=50, help='Quantity of collects, default is 500.')
 	@click.option('--comment', default=100, help='Quantity of comments, default is 500.')
-	def forge(user, photo, tag, collect, comment):
+	def forge(user, follow, photo, tag, collect, comment):
 		"""Generate fake data."""
 
-		from albumy.fakes import fake_admin, fake_comment, fake_photo, fake_tag, fake_user, fake_collect
+		from albumy.fakes import fake_admin, fake_comment, fake_follow, fake_photo, fake_tag, fake_user, fake_collect
 
 		db.drop_all()
 		db.create_all()
@@ -123,6 +132,8 @@ def register_command(app):
 		fake_admin()
 		click.echo('Generating %d users...' % user)
 		fake_user(user)
+		click.echo('Generating %d follows...' % follow)
+		fake_follow(follow)
 		click.echo('Generating %d tags...' % tag)
 		fake_tag(tag)
 		click.echo('Generating %d photos...' % photo)

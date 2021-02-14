@@ -20,9 +20,7 @@ avatars = Avatars()
 @login_manager.user_loader
 def load_user(user_id):
     from albumy.models import User
-    print('user.id: ', user_id)
     user = User.query.get(int(user_id))
-    print('user: ', user)
     return user
 
 
