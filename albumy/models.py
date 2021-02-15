@@ -107,6 +107,10 @@ class User(db.Model, UserMixin):
 	def validate_password(self, password):
 		return check_password_hash(self.password_hash, password)
 
+	@property
+	def followed_photos(self):
+		return Photo.query.join(Follow, Follow.followed_id == Photo.author_id).filter(Follow.follower_id == self.id)
+
 	def collect(self, photo):
 		"""收藏图片"""
 		if self.is_collecting(photo):
