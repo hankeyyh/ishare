@@ -10,7 +10,6 @@ test.db
 
 Pipfile
 Pipfile.lock
-.flaskenv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,0 +1,3 @@
+FLASK_ENV = dev
+FLASK_APP = albumy
+FLASK_RUN_PORT = 5011
