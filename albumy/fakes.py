@@ -15,7 +15,7 @@ fake = Faker()
 def fake_admin():
 	admin = User(name='Yuhan Yang',
 	             username='yyh',
-	             email='hankeyyh@outlook.com',
+	             email='admin@helloflask.com',
 	             bio=fake.sentence(),
 	             website="",
 	             confirmed=True)

@@ -10,7 +10,6 @@ test.db
 
 Pipfile
 Pipfile.lock
-uploads/
 .flaskenv
 
 # Byte-compiled / optimized / DLL files

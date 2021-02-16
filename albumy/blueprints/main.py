@@ -220,9 +220,10 @@ def new_comment(photo_id):
 	comment_form = CommentForm()
 	page = request.args.get('page', 1, type=int)
 	if comment_form.validate_on_submit():
+		author = current_user._get_current_object()
 		comment = Comment(body=comment_form.body.data,
 		                  photo=photo,
-		                  author=photo.author)
+		                  author=author)
 
 		replied_id = request.args.get('reply')
 		if replied_id:
@@ -265,6 +266,7 @@ def delete_comment(comment_id):
 	return redirect(url_for('.show_photo', photo_id=comment.photo_id))
 
 @main_bp.route('/reply/comment/<int:comment_id>')
+@permission_required('COMMENT')
 def reply_comment(comment_id):
 	comment = Comment.query.get_or_404(comment_id)
 	return redirect(url_for('.show_photo', photo_id=comment.photo_id,
