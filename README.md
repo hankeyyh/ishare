@@ -1,5 +1,6 @@
 # ishare
 instagram-like social website based on flask
+![explore](https://github.com/hankeyyh/ishare/blob/master/img.png)
 # installation
 clone:
 ```
