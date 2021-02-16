@@ -11,7 +11,6 @@ install:
 ```
 $ pip install -r requirements
 ```
-config:
 create `.env` and add:
 ```
 MAIL_SERVER = smtp.your_mail_server.com
