@@ -17,7 +17,7 @@ from albumy.blueprints.ajax import ajax_bp
 def create_app(config_name=None):
 	config_name = os.getenv('FLASK_ENV', 'dev') if not config_name else config_name
 	
-	app = Flask("albumy")
+	app = Flask(__name__)
 	app.config.from_object(configs[config_name])
 	register_extensions(app)
 	register_blueprints(app)
